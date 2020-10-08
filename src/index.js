@@ -1,20 +1,46 @@
 import './styles.css';
-import colorSwitch from './js/color-switch';
-import promiseTask01 from './js/promise-task-01';
-import promiseTask02 from './js/promise-task-02';
-import promiseTask03 from './js/promise-task-03';
-import { CountdownTimer } from './js/timer';
+import fetchCountries from './js/fetchCountries';
+import notifyMsg from './js/notifyMsg';
+import { refs } from './js/refs';
+import countryList from './templates/countryList.hbs';
+import countryInfo from './templates/countryInfo.hbs';
+const debounce = require('lodash.debounce');
 
-colorSwitch();
 
-const timer = new CountdownTimer({
-  selector: '#timer-1',
-  targetDate: new Date('Jan 13, 2021'),
+refs.searchQuery.addEventListener('input', debounce(searchInputValue, 500));
+
+function renderMarkup(countries) {
+  let markup = null;
+  if (countries.length === 1) {
+    markup = countryInfo(countries);
+    notifyMsg.successMsg();
+    return refs.countryInfoRef.insertAdjacentHTML('beforeend', markup);
+  } else if (countries.length > 1 || countries.length <= 4) {
+    markup = countryList(countries);
+    return refs.countryListRef.insertAdjacentHTML('beforeend', markup);
+  }
+}
+
+function searchInputValue(event) {
+  const inputValue = event.target.value;
+  refs.countryListRef.innerHTML = '';
+  refs.countryInfoRef.innerHTML = '';
+  if (inputValue.length > 1) {
+    fetchCountries(inputValue)
+      .then(data => {
+        if (data.length > 0 && data.length <= 4) {
+          renderMarkup(data);
+        } else if (data.length > 4) {
+          notifyMsg.infoMsg()
+        }
+      })
+      .catch(
+        notifyMsg.errorMsg());
+  }
+}
+
+refs.countryListRef.addEventListener('click', event => {
+ const searchQuery = event.target.textContent;
+  refs.countryInfoRef.innerHTML = '';
+  fetchCountries(searchQuery).then(data => renderMarkup(data));
 });
-timer.init();
-
-
-promiseTask01();
-promiseTask02();
-promiseTask03();
-
